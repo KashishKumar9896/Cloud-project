@@ -111,6 +111,15 @@ app.get('/api/messages', (req, res) => {
   res.json(messages);
 });
 
+// Debug endpoint: return network interfaces for remote inspection
+app.get('/__interfaces', (req, res) => {
+  try {
+    res.json(os.networkInterfaces());
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 app.post('/api/messages', async (req, res) => {
   const { username, text, avatar } = req.body;
 
