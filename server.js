@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
+import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -155,6 +156,22 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-server.listen(PORT, () => {
-  console.log(`Chat server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  // Determine non-internal IPv4 addresses and print accessible URLs
+  const nets = os.networkInterfaces();
+  const addresses = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        addresses.push(net.address);
+      }
+    }
+  }
+
+  console.log(`Chat server listening on port ${PORT} (bound to 0.0.0.0)`);
+  if (addresses.length) {
+    addresses.forEach((ip) => console.log(`Accessible at http://${ip}:${PORT}`));
+  } else {
+    console.log(`Accessible at http://localhost:${PORT}`);
+  }
 });
