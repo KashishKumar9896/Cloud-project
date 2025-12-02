@@ -157,21 +157,24 @@ app.get('/', (req, res) => {
 
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
-  // Determine non-internal IPv4 addresses and print accessible URLs
+  // Print all network interfaces (family, address, internal) to help debugging
   const nets = os.networkInterfaces();
-  const addresses = [];
+  const externalIPv4 = [];
+
+  console.log(`Chat server listening on port ${PORT} (bound to 0.0.0.0)`);
+  console.log('Network interfaces:');
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
-      if (net.family === 'IPv4' && !net.internal) {
-        addresses.push(net.address);
-      }
+      const family = typeof net.family === 'string' ? net.family : (net.family === 4 ? 'IPv4' : 'IPv6');
+      console.log(` - ${name}: ${family} ${net.address} ${net.internal ? '(internal)' : ''}`);
+      if (family === 'IPv4' && !net.internal) externalIPv4.push(net.address);
     }
   }
 
-  console.log(`Chat server listening on port ${PORT} (bound to 0.0.0.0)`);
-  if (addresses.length) {
-    addresses.forEach((ip) => console.log(`Accessible at http://${ip}:${PORT}`));
+  if (externalIPv4.length) {
+    externalIPv4.forEach((ip) => console.log(`Accessible at http://${ip}:${PORT}`));
   } else {
-    console.log(`Accessible at http://localhost:${PORT}`);
+    console.log('No external IPv4 addresses detected. If you are on a cloud VM, check cloud provider public/private IP and security groups/firewall.');
+    console.log(`Try locally: http://localhost:${PORT}`);
   }
 });
