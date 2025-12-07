@@ -348,12 +348,13 @@
             messageEl.className = 'message';
 
             const time = new Date(message.timestamp).toLocaleTimeString();
+            const filteredBadge = message.filtered ? ' <span style="color: #ef4444; font-size: 11px; font-weight: 600;">[FILTERED]</span>' : '';
 
             messageEl.innerHTML = `
                 <div class="avatar">${message.avatar}</div>
                 <div class="message-content">
                     <div class="message-header">
-                        <strong>${escapeHtml(message.username)}</strong>
+                        <strong>${escapeHtml(message.username)}${filteredBadge}</strong>
                         <span class="message-time">${time}</span>
                     </div>
                     <div class="message-text">${escapeHtml(message.text)}</div>

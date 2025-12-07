@@ -6,6 +6,11 @@ import { dirname, join } from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import os from 'os';
+import dotenv from 'dotenv';
+import { detectInappropriateContent, censorText } from './contentFilter.js';
+
+// Load environment variables
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,6 +20,7 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 3000;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const MESSAGES_FILE = join(__dirname, 'messages.json');
 
 // Middleware
@@ -67,12 +73,17 @@ wss.on('connection', (ws) => {
       const message = JSON.parse(data);
 
       if (message.type === 'chat') {
+        // Detect inappropriate content using Gemini API and local filter
+        const filterResult = await detectInappropriateContent(message.text, GEMINI_API_KEY);
+
         const chatMessage = {
           id: Date.now(),
           username: message.username || 'Anonymous',
-          text: message.text,
+          text: filterResult.censoredText, // Use censored text
           timestamp: new Date().toISOString(),
-          avatar: message.avatar || '👤'
+          avatar: message.avatar || '👤',
+          filtered: filterResult.isInappropriate, // Flag if content was filtered
+          filterReason: filterResult.isInappropriate ? filterResult.reason : null
         };
 
         messages.push(chatMessage);
@@ -127,12 +138,17 @@ app.post('/api/messages', async (req, res) => {
     return res.status(400).json({ error: 'Message cannot be empty' });
   }
 
+  // Filter content using Gemini API
+  const filterResult = await detectInappropriateContent(text, GEMINI_API_KEY);
+
   const message = {
     id: Date.now(),
     username: username || 'Anonymous',
-    text,
+    text: filterResult.censoredText,
     timestamp: new Date().toISOString(),
-    avatar: avatar || '👤'
+    avatar: avatar || '👤',
+    filtered: filterResult.isInappropriate,
+    filterReason: filterResult.isInappropriate ? filterResult.reason : null
   };
 
   messages.push(message);
